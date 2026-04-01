@@ -1,49 +1,45 @@
-# 🚀 AWS Docker CI/CD Static Website Deployment
+# 🚀 AWS + Docker + GitHub Actions CI/CD Project
 
-This project demonstrates a complete **DevOps pipeline** to deploy a static website using:
-
-* 🐳 Docker (Containerization)
-* ☁️ AWS EC2 (Hosting)
-* 🔄 GitHub Actions (CI/CD)
-* 📦 Docker Hub (Image Registry)
-* 🌐 Nginx (Web Server)
+This project demonstrates a **complete end-to-end DevOps pipeline** to deploy a static website using Docker, GitHub Actions, Docker Hub, and AWS EC2.
 
 ---
 
 # 📌 Project Overview
 
-This project automates the deployment of a static website using a modern CI/CD pipeline:
+This project automates deployment using CI/CD:
 
-```
+```text
 GitHub Push
    ↓
 GitHub Actions (Build Docker Image)
    ↓
-Push to Docker Hub
+Push Image to Docker Hub
    ↓
-EC2 pulls latest image
+EC2 pulls image
    ↓
 Runs container (Nginx server)
+   ↓
+Website Live 🚀
 ```
 
 ---
 
 # 🧱 Tech Stack
 
-* Docker
-* AWS EC2 (Ubuntu)
-* GitHub Actions
-* Docker Hub
-* Nginx
+* 🐳 Docker (Containerization)
+* ☁️ AWS EC2 (Ubuntu Server)
+* 🔄 GitHub Actions (CI/CD Automation)
+* 📦 Docker Hub (Image Registry)
+* 🌐 Nginx (Web Server)
 
 ---
 
 # 📁 Project Structure
 
-```
+```text
 aws-docker/
 │── index.html
-│── styles.css
+│── style.css
 │── script.js
 │── Dockerfile
 │── .github/
@@ -63,27 +59,39 @@ COPY . /usr/share/nginx/html
 EXPOSE 80
 ```
 
-## Build Image
+---
+
+## Build Image (Local)
 
 ```bash
 docker build -t my-static-site .
 ```
 
-## Run Container
+---
+
+## Run Container (Local Test)
 
 ```bash
-docker run -d -p 8080:80 --name my-container my-static-site
+docker run -d -p 8080:80 my-static-site
+```
+
+Open:
+
+```text
+http://localhost:8080
 ```
 
 ---
 
-# ☁️ AWS EC2 Setup
+# ☁️ AWS EC2 Setup (Ubuntu)
 
 ## Connect to EC2
 
 ```bash
-ssh -i your-key.pem ubuntu@your-ip
+ssh -i your-key.pem ubuntu@your-ec2-ip
 ```
+
+---
 
 ## Install Docker
 
@@ -92,27 +100,42 @@ sudo apt update
 sudo apt install docker.io -y
 sudo systemctl start docker
 sudo systemctl enable docker
+```
+
+---
+
+## Fix Docker Permission (IMPORTANT)
+
+```bash
 sudo usermod -aG docker ubuntu
+sudo chmod 666 /var/run/docker.sock
+```
+
+👉 Logout & login again:
+
+```bash
+exit
+ssh -i your-key.pem ubuntu@your-ip
 ```
 
 ---
 
 # 🔐 GitHub Secrets
 
-Add the following secrets in your repository:
+Add these in **Repo → Settings → Secrets → Actions**
 
-| Secret Name     | Description           |
-| --------------- | --------------------- |
-| DOCKER_USERNAME | Docker Hub username   |
-| DOCKER_PASSWORD | Docker Hub password   |
-| EC2_HOST        | EC2 Public IP         |
-| EC2_SSH_KEY     | EC2 .pem file content |
+| Secret Name     | Description              |
+| --------------- | ------------------------ |
+| DOCKER_USERNAME | Docker Hub username      |
+| DOCKER_PASSWORD | Docker Hub password      |
+| EC2_HOST        | EC2 Public IP            |
+| EC2_SSH_KEY     | Full `.pem` file content |
 
 ---
 
 # ⚙️ GitHub Actions Workflow
 
-Path: `.github/workflows/deploy.yml`
+File: `.github/workflows/deploy.yml`
 
 ```yaml
 name: CI/CD Pipeline
@@ -157,55 +180,112 @@ jobs:
 
 ---
 
+# 🚀 Manual Deployment (Important Learning)
+
+If CI/CD fails, run manually on EC2:
+
+```bash
+docker pull shubh0264/my-static-site
+docker stop my-container || true
+docker rm my-container || true
+docker run -d -p 8080:80 --name my-container shubh0264/my-static-site
+```
+
+---
+
 # 🌐 Access Website
 
-```
+```text
 http://<EC2-PUBLIC-IP>:8080
 ```
+
+Example:
+
+```text
+http://13.201.xx.xxx:8080
+```
+
+---
+
+# 🔓 AWS Security Group Rules
+
+| Type       | Port |
+| ---------- | ---- |
+| SSH        | 22   |
+| HTTP       | 80   |
+| Custom TCP | 8080 |
+
+Source: `0.0.0.0/0`
 
 ---
 
 # 🧠 Key Learnings
 
-* How Docker containerizes applications
-* Difference between local deployment vs container deployment
-* How CI/CD pipelines automate deployment
-* Using Docker Hub as a container registry
-* SSH-based remote deployment using GitHub Actions
-* AWS Security Groups and networking basics
+* Docker containerization and image creation
+* Difference between local image vs Docker Hub image
+* CI/CD pipeline using GitHub Actions
+* Using Docker Hub as a central registry
+* Deploying containers on AWS EC2
+* Debugging real-world DevOps issues (ports, permissions, SSH)
 
 ---
 
-# ⚠️ Common Issues & Fixes
+# ⚠️ Common Errors & Fixes
 
-### Port not accessible
-
-* Ensure port 8080 is open in AWS Security Group
-
-### SSH connection failed
-
-* Check EC2_SSH_KEY format
-* Ensure port 22 is open
-
-### Docker permission error
+## ❌ Permission Denied
 
 ```bash
-sudo chmod 666 /var/run/docker.sock
+sudo usermod -aG docker ubuntu
+exit
 ```
 
 ---
 
-# 🚀 Future Improvements
+## ❌ Image Not Found
 
-* Add custom domain with Route 53
-* Enable HTTPS using CloudFront
-* Use AWS ECR instead of Docker Hub
-* Add Load Balancer
-* Move to Kubernetes (EKS)
+Wrong:
+
+```bash
+docker run my-static-site
+```
+
+Correct:
+
+```bash
+docker run shubh0264/my-static-site
+```
 
 ---
 
-# 📌 Author
+## ❌ Site Not Opening
+
+* Check port 8080 in Security Group
+* Use correct URL:
+
+```text
+http://EC2-IP:8080
+```
+
+---
+
+## ❌ SSH Connection Failed
+
+* Check `.pem` file format
+* Ensure port 22 open
+
+---
+
+# 🔥 Future Improvements
+
+* Add custom domain (Route 53)
+* Enable HTTPS (CloudFront / SSL)
+* Use AWS ECR instead of Docker Hub
+* Add Load Balancer
+* Deploy using Kubernetes (EKS)
+
+---
+
+# 👨‍💻 Author
 
 Shubham Gupta
 DevOps Learner 🚀
@@ -214,4 +294,4 @@ DevOps Learner 🚀
 
 # ⭐ If you like this project
 
-Give it a ⭐ on GitHub and use it as your DevOps starter template!
+Give it a ⭐ on GitHub!
